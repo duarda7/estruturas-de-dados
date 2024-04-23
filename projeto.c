@@ -8,27 +8,18 @@
 #else
 #include <unistd.h>
 #endif
+#include <windows.h>
 
-void deleteEmail(char emails_cadastrados[][80], int *num_emails);
 
-int searchEmail(char emails_cadastrados[][80], int num_emails, const char* email) {
-	int i;
-    for (i = 0; i < num_emails; i++) {
-        if (strcmp(emails_cadastrados[i], email) == 0) {
-            return i; 
-        }
-    }
-    return -1;
-}
 
 void printRaffleBoard(int board[10][10]) {
     printf("===================================================\n");
     printf("|*                Rifa da Sorte                  *|\n");
     printf("===================================================\n");
-    int i, j;
-    for (i = 0; i < 10; i++) {
+
+    for (int i = 0; i < 10; i++) {
         printf("|");
-        for (j = 0; j < 10; j++) {
+        for (int j = 0; j < 10; j++) {
             printf(" %2d |", board[i][j]);
         }
         printf("\n---------------------------------------------------\n");
@@ -36,105 +27,149 @@ void printRaffleBoard(int board[10][10]) {
 }
 
 void generateBoleto(float valorTotal);
-void salvarEmailsTexto(char emails_cadastrados[][80], int num_emails) {
-    FILE *arquivo_texto = fopen("emails.txt", "w");
-    if (arquivo_texto != NULL) {
-    	int i;
-        for (i = 0; i < num_emails; i++) {
-            fprintf(arquivo_texto, "%s\n", emails_cadastrados[i]);
+
+
+typedef struct Node {
+    char email[100];
+    struct Node* next;
+} Node;
+
+
+Node* createNode(char* email) {
+    Node* newNode = (Node*)malloc(sizeof(Node));
+    strcpy(newNode->email, email);
+    newNode->next = NULL;
+    return newNode;
+}
+
+void editarEmail(Node* head, char* emailAntigo, char* novoEmail) {
+    Node* temp = head;
+    int found = 0;
+    while (temp != NULL) {
+        if (strcmp(temp->email, emailAntigo) == 0) {
+            strcpy(temp->email, novoEmail);
+            printf("Email editado com sucesso!\n");
+            found = 1;
+            break;
         }
-        fclose(arquivo_texto);
-    } else {
-        printf("Erro ao abrir o arquivo de texto para escrita.\n");
+        temp = temp->next;
+    }
+    if (!found) {
+        printf("Email %s n√£o encontrado na lista. N√£o foi poss√≠vel editar.\n", emailAntigo);
     }
 }
 
-int carregarEmailsTexto(char emails_cadastrados[][80]) {
-    FILE *arquivo_texto = fopen("emails.txt", "r");
-    int num_emails = 0;
-    if (arquivo_texto != NULL) {
-        while (fscanf(arquivo_texto, "%79s", emails_cadastrados[num_emails]) == 1) {
-            num_emails++;
+
+void cadastrar(Node** head, char* email) {
+	if (strchr(email, '@') == NULL) {
+        printf("Email inv√°lido! O email deve conter o caractere '@'.\n");
+        return;
+    }
+    
+    Node* temp = *head;
+    while (temp != NULL) {
+        if (strcmp(temp->email, email) == 0) {
+            printf("Email j√° cadastrado no sistema.\n");
+            return;
         }
-        fclose(arquivo_texto);
-    } else {
-        printf("Erro ao abrir o arquivo de texto para leitura.\n");
+        temp = temp->next;
     }
-    return num_emails;
-}
-
-void salvarEmailsBinario(char emails_cadastrados[][80], int num_emails) {
-    FILE *arquivo_binario = fopen("emails.bin", "wb");
-    if (arquivo_binario != NULL) {
-        fwrite(emails_cadastrados, sizeof(emails_cadastrados[0]), num_emails, arquivo_binario);
-        fclose(arquivo_binario);
+    
+    Node* newNode = createNode(email);
+    if (*head == NULL) {
+        *head = newNode;
     } else {
-        printf("Erro ao abrir o arquivo bin·rio para escrita.\n");
-    }
-}
-
-int carregarEmailsBinario(char emails_cadastrados[][80]) {
-    FILE *arquivo_binario = fopen("emails.bin", "rb");
-    int num_emails = 0;
-    if (arquivo_binario != NULL) {
-        while (fread(emails_cadastrados[num_emails], sizeof(emails_cadastrados[0]), 1, arquivo_binario) == 1) {
-            num_emails++;
+        Node* temp = *head;
+        while (temp->next != NULL) {
+            temp = temp->next;
         }
-        fclose(arquivo_binario);
-    } else {
-        printf("Erro ao abrir o arquivo bin·rio para leitura.\n");
+        temp->next = newNode;
     }
-    return num_emails;
+    printf("Email %s cadastrado com sucesso!\n", email);
 }
-int buscaEmail(char emails_cadastrados[][80], int num_emails, const char *emailBuscado) {
-	int i;
-    for (i = 0; i < num_emails; i++) {
-        if (strcmp(emails_cadastrados[i], emailBuscado) == 0) {
-            return i; 
+
+
+void listar(Node* head) {
+    if (head == NULL) {
+        printf("A lista est√° vazia.\n");
+    } else {
+        Node* temp = head;
+        printf("Emails da lista:\n");
+        while (temp != NULL) {
+            printf("%s\n", temp->email);
+            temp = temp->next;
         }
     }
-    return -1; 
-}
-void editEmail(char emails_cadastrados[][80], int num_emails) {
-    char email_antigo[80], novo_email[80];
-    int indice_email;
-
-    printf("Digite o email que deseja editar:\n");
-    scanf("%s", email_antigo);
-
-    indice_email = searchEmail(emails_cadastrados, num_emails, email_antigo);
-
-    if (indice_email != -1) {
-        printf("Digite o novo email:\n");
-        scanf("%s", novo_email);
-
-        strcpy(emails_cadastrados[indice_email], novo_email);
-        printf("Email editado com sucesso!\n");
-    } else {
-        printf("O email informado n„o foi encontrado no sistema!\n");
-    }
 }
 
-void deleteEmail(char emails_cadastrados[][80], int *num_emails) {
-    char email_excluir[80];
-    int indice_email_excluir;
-
-    printf("Digite o email que deseja excluir:\n");
-    scanf("%s", email_excluir);
-
-    indice_email_excluir = searchEmail(emails_cadastrados, *num_emails, email_excluir);
-
-    if (indice_email_excluir != -1) {
-    	int i;
-        for (i = indice_email_excluir; i < *num_emails - 1; i++) {
-            strcpy(emails_cadastrados[i], emails_cadastrados[i + 1]);
+void buscar(Node* head, char* email) {
+    Node* temp = head;
+    int found = 0;
+    while (temp != NULL) {
+        if (strcmp(temp->email, email) == 0) {
+            printf("Email %s encontrado na lista.\n", email);
+            found = 1;
+            break;
         }
-        (*num_emails)--;
-        printf("Email excluÌdo com sucesso!\n");
-    } else {
-        printf("Email n„o encontrado no sistema.\n");
+        temp = temp->next;
+    }
+    if (!found) {
+        printf("Email %s n√£o encontrado na lista.\n", email);
     }
 }
+
+
+void excluir(Node** head, char* email) {
+    Node* temp = *head;
+    Node* prev = NULL;
+
+    while (temp != NULL && strcmp(temp->email, email) != 0) {
+        prev = temp;
+        temp = temp->next;
+    }
+
+    if (temp == NULL) {
+        printf("Email %s n√£o encontrado na lista. Nada foi exclu√≠do.\n", email);
+        return;
+    }
+
+    if (prev == NULL) {
+        *head = temp->next;
+    } else {
+        prev->next = temp->next;
+    }
+
+    free(temp);
+    printf("Email %s exclu√≠do da lista.\n", email);
+}
+
+
+void ordenarLista(Node** head) {
+    Node* current = *head;
+    Node* index = NULL;
+    char temp[100];
+
+    if (*head == NULL) {
+        return;
+    } else {
+        while (current != NULL) {
+            index = current->next;
+
+            while (index != NULL) {
+                if (strcmp(current->email, index->email) > 0) {
+                    strcpy(temp, current->email);
+                    strcpy(current->email, index->email);
+                    strcpy(index->email, temp);
+                }
+                index = index->next;
+            }
+            current = current->next;
+        }
+    }
+}
+
+void editarEmail(Node* head, char* emailAntigo, char* novoEmail);
+
 
 int main() {
     setlocale(LC_ALL, "Portuguese");
@@ -152,12 +187,13 @@ int main() {
     int num_emails = 0; 
     int prizeNumber; 
     int emailValid = 0; 
+Node* head = NULL;
+    
 
-
-    printf(" Ol·, querido cliente! VocÍ est· acessando a Ufersa.NET \n");
+    printf(" Ol√°, querido cliente! Voc√™ est√° acessando a Ufersa.NET \n");
     printf(" Vamos iniciar realizando o seu login!\n");
     printf("--------------------------------------------------------\n");
-    printf(" Digite o nome de usu·rio:\n");
+    printf(" Digite o nome de usu√°rio:\n");
     scanf("%s", login_digitado);
 
     printf("Digite a senha:\n");
@@ -172,7 +208,7 @@ int main() {
         system("cls || clear");
     while (1) {
         emailValid = 0; 
-        printf("\nSelecione uma opÁ„o:\n");
+        printf("\nSelecione uma op√ß√£o:\n");
         printf("-------------------------------------------------------\n");
         printf("|1. Cadastrar Email                                   |\n");
         printf("|                                                     |\n");
@@ -186,7 +222,7 @@ int main() {
         printf("|                                                     |\n");
         printf("|6. Excluir Email Cadastrado                          |\n");
         printf("-------------------------------------------------------\n"); 
-        printf("OpÁ„o: ");
+        printf("Op√ß√£o: ");
         scanf("%d", &opcao_menu);
 
 #ifdef _WIN32
@@ -197,15 +233,10 @@ int main() {
         system("cls || clear");
         switch (opcao_menu) {
             case 1:
-                printf("Digite o seu email:\n");
+                printf("Digite o email a ser cadastrado: ");
                 scanf("%s", email);
-                int i;
-                for (i = 0; email[i] != '\0'; i++) {
-                    if (email[i] == '@' && strlen(email) < 80) {
-                        emailValid = 1;
-                        break;
-                    }
-                }
+                cadastrar(&head, email);
+                break;
 
 #ifdef _WIN32
                 Sleep(2000);
@@ -214,11 +245,10 @@ int main() {
 #endif
                 system("cls || clear");
                 if (emailValid == 0) {
-                    printf("Opss... Email inv·lido! Certifique-se de que o email inserido contenha '@' e tenha no m·ximo 79 caracteres.\n");
+                    printf("Opss... Email inv√°lido! Certifique-se de que o email inserido contenha '@' e tenha no m√°ximo 79 caracteres.\n");
                 } else {
                     int emailExiste = 0;
-                    int i;
-                    for (i = 0; i < num_emails; i++) {
+                    for (int i = 0; i < num_emails; i++) {
                         if (strcmp(emails_cadastrados[i], email) == 0) {
                             emailExiste = 1;
                             break;
@@ -226,7 +256,7 @@ int main() {
                     }
 
                     if (emailExiste) {
-                        printf("Email j· cadastrado no sistema.\n");
+                        printf("Email j√° cadastrado no sistema.\n");
                     } else {
                         if (num_emails < 10) {
                             strcpy(emails_cadastrados[num_emails], email);
@@ -247,10 +277,7 @@ int main() {
                 system("cls || clear");
             case 2:
                 
-                printf("\nEmails cadastrados:\n");
-                for (i = 0; i < num_emails; i++) {
-                    printf("%d. %s\n", i + 1, emails_cadastrados[i]);
-                }
+               listar(head);
                 break;
 
 #ifdef _WIN32
@@ -272,24 +299,26 @@ int main() {
                 system("cls || clear");
                 case 4:
                 
-                printf("Digite o email que deseja buscar:\n");
+                printf("Digite o email a ser buscado: ");
                 scanf("%s", email);
-                found_index = searchEmail(emails_cadastrados, num_emails, email);
-                if (found_index >= 0) {
-                    printf("Email encontrado na posiÁ„o %d.\n", found_index + 1);
-                } else {
-                    printf("Email n„o encontrado no sistema.\n");
-                }
+                buscar(head, email);
                 break;
                 case 5:
-    editEmail(emails_cadastrados, num_emails);
+     char novoEmail[100]; // Declara√ß√£o da vari√°vel novoEmail
+    printf("Digite o email a ser editado: ");
+    scanf("%s", email);
+    printf("Digite o novo email: ");
+    scanf("%s", novoEmail); // Utilizando a vari√°vel novoEmail
+    editarEmail(head, email, novoEmail);
     break;
     
                 case 6:
-    deleteEmail(emails_cadastrados, &num_emails);
-    break;
+    printf("Digite o email a ser exclu√≠do: ");
+                scanf("%s", email);
+                excluir(&head, email);
+                break;
             default:
-                printf("OpÁ„o inv·lida. Tente novamente.\n");
+                printf("Op√ß√£o inv√°lida. Tente novamente.\n");
         }
 
         if (opcao_menu == 3) {
@@ -311,10 +340,9 @@ int main() {
 #endif
         int raffleBoard[10][10];
         int nextRaffleNumber = 1;
-        int i;
-        for (i = 0; i < 10; i++) {
-        	int j;
-            for (j = 0; j < 10; j++) {
+
+        for (int i = 0; i < 10; i++) {
+            for (int j = 0; j < 10; j++) {
                 raffleBoard[i][j] = nextRaffleNumber++;
             }
         }
@@ -352,7 +380,7 @@ int main() {
             printf("|                                                   |\n");
             printf("-----------------------------------------------------\n");
             printf("                                                    \n");
-            printf("Informe a opÁ„o desejada: \n");
+            printf("Informe a op√ß√£o desejada: \n");
             scanf("%d", &opcao2);
             printf("                                                    \n");
         #ifdef _WIN32
@@ -367,9 +395,9 @@ int main() {
                     printf("|              Escolha seu plano:                    |\n");
                     printf("-----------------------------------------------------\n");
                     printf("|                                                    |\n");
-                    printf("|   B - B·sico (10%% de desconto)                     |\n");
+                    printf("|   B - B√°sico (10%% de desconto)                     |\n");
                     printf("|                                                    |\n");
-                    printf("|   I - Intermedi·rio (20%% de desconto)              |\n");
+                    printf("|   I - Intermedi√°rio (20%% de desconto)              |\n");
                     printf("|                                                    |\n");
                     printf("|   P - Premium (30%% de desconto)                    |\n");
                     printf("|                                                    |\n");
@@ -398,7 +426,7 @@ int main() {
 
                     if (valor_total >= 0) {
                         printf("-----------------------------------------------------\n");
-                        printf("*       O valor total da sua conta È R$ %.2f       *\n", valor_total);
+                        printf("*       O valor total da sua conta √© R$ %.2f       *\n", valor_total);
                         printf("-----------------------------------------------------\n");
                         printf("                                                   \n");
                         #ifdef _WIN32
@@ -410,7 +438,7 @@ int main() {
                         printf("                                                    \n");
                 
                     } else {
-                        printf("Plano inv·lido. Por favor, escolha um plano v·lido. (B, I ou P).\n");
+                        printf("Plano inv√°lido. Por favor, escolha um plano v√°lido. (B, I ou P).\n");
                          printf("                                                   \n");
                     }
                     break;
@@ -418,15 +446,15 @@ int main() {
                     printf("-----------------------------------------------------\n");
                     printf("|           Tabela de Tipos de Pagamento            |\n");
                     printf("-----------------------------------------------------\n");
-                    printf("| 1 - Cart„o de CrÈdito                             |\n");
+                    printf("| 1 - Cart√£o de Cr√©dito                             |\n");
                     printf("|                                                   |\n");
-                    printf("| 2 - Boleto Banc·rio                               |\n");
+                    printf("| 2 - Boleto Banc√°rio                               |\n");
                     printf("|                                                   |\n");
                     printf("| 3 - PIX                                           |\n");
                     printf("|                                                   |\n");
                     printf("-----------------------------------------------------\n");
                     printf("                                                   \n");
-                    printf("Digite o n˙mero do tipo de pagamento desejado:\n ");
+                    printf("Digite o n√∫mero do tipo de pagamento desejado:\n ");
                     scanf("%d", &opcao3);
                     #ifdef _WIN32
         Sleep(2000);
@@ -438,10 +466,10 @@ int main() {
                     switch (opcao3) {
                         case 1:
                         	printf("================================================================================\n");
-                            printf("Tipo de pagamento selecionado: Cart„o de CrÈdito\n");
-                            printf("Prezado cliente, como o sr.(a) escolheu a opÁ„o de pagamento cart„o de crÈdito\n");
-                            printf("pedimos que dirija-se atÈ a unidade de atendimento mais prÛxima.   \n");
-                            printf("Essa medida È tomada por razıes de seguranÁa.             \n");
+                            printf("Tipo de pagamento selecionado: Cart√£o de Cr√©dito\n");
+                            printf("Prezado cliente, como o sr.(a) escolheu a op√ß√£o de pagamento cart√£o de cr√©dito\n");
+                            printf("pedimos que dirija-se at√© a unidade de atendimento mais pr√≥xima.   \n");
+                            printf("Essa medida √© tomada por raz√µes de seguran√ßa.             \n");
                             printf("================================================================================\n");
                             printf("                                                 \n");
                             #ifdef _WIN32
@@ -452,7 +480,7 @@ int main() {
         system("cls || clear");
                             break;
                         case 2:
-                            printf("Tipo de pagamento selecionado: Boleto Banc·rio\n");
+                            printf("Tipo de pagamento selecionado: Boleto Banc√°rio\n");
                             printf("                                                 \n");
                             printf("Valor total da conta: R$ %.2f\n", valor_total);
                             generateBoleto(valor_total);
@@ -482,7 +510,7 @@ int main() {
         system("cls || clear");
                             break;
                         default:
-                            printf("OpÁ„o inv·lida. Digite um n˙mero v·lido (1, 2 ou 3).\n");
+                            printf("Op√ß√£o inv√°lida. Digite um n√∫mero v√°lido (1, 2 ou 3).\n");
                             printf("                                                 \n");
                             printf("                                                 \n");
                     }
@@ -496,7 +524,7 @@ int main() {
         system("cls || clear");
                 case 3:
                     printf(" +-------------------------------------------+ \n");
-                    printf(" |   Tabela de InformaÁıes - Internet R·pida | \n");
+                    printf(" |   Tabela de Informa√ß√µes - Internet R√°pida | \n");
                     printf(" |                                           |\n");
                     printf(" +-------------------------------------------+ \n");
                     printf(" | Velocidade    |   Download   |   Upload   | \n");
@@ -530,7 +558,7 @@ int main() {
                     printf("=========================================================\n");
                     printf("|        Tabela de Formas de Contato - UfersaNet        |\n");
                     printf("---------------------------------------------------------\n");
-                    printf("|    Forma de Contato |      DescriÁ„o                  |\n");
+                    printf("|    Forma de Contato |      Descri√ß√£o                  |\n");
                     printf("---------------------------------------------------------\n");
                     printf("|   Telefone          |         0800 7447               |\n");
                     printf("|                     |                                 |\n");
@@ -538,7 +566,7 @@ int main() {
                     printf("|                     |                                 |\n");
                     printf("|   Redes Sociais     |     @ufersanet.oficial          |\n");
                     printf("|                     |                                 |\n");
-                    printf("|   Suporte TÈcnico   |     suporteufnet.com.br         |\n");
+                    printf("|   Suporte T√©cnico   |     suporteufnet.com.br         |\n");
                     printf("|                     |                                 |\n");
                     printf("=========================================================\n");   
                      printf("                                                    \n");
@@ -560,11 +588,11 @@ int main() {
                     printRaffleBoard(raffleBoard);
 
                     int chosenNumber;
-                    printf("Escolha um n˙mero da rifa (1 a 100): ");
+                    printf("Escolha um n√∫mero da rifa (1 a 100): ");
                     scanf("%d", &chosenNumber);
 
                     if (chosenNumber >= 1 && chosenNumber <= 100) {
-                        printf("Ok %s! VocÍ escolheu o n˙mero %d.\n", nome, chosenNumber);
+                        printf("Ok %s! Voc√™ escolheu o n√∫mero %d.\n", nome, chosenNumber);
                          printf(" Que rufem os tambores...  \n");
                          #ifdef _WIN32
         Sleep(3000); 
@@ -572,18 +600,18 @@ int main() {
         sleep(3); 
 #endif
                           printf("                                                    \n");
-                        printf("O n˙mero vencedor: %d\n", prizeNumber);
+                        printf("O n√∫mero vencedor: %d\n", prizeNumber);
                     
 
                         if (chosenNumber == prizeNumber) {
-                            printf("ParabÈns! VocÍ ganhou uma viagem para Gramado!\n");
+                            printf("Parab√©ns! Voc√™ ganhou uma viagem para Gramado!\n");
                             printf("                                                    \n");
                         } else {
-                            printf("Poxa, sinto muito... N„o foi dessa vez!\n");
+                            printf("Poxa, sinto muito... N√£o foi dessa vez!\n");
                             printf("                                                    \n");
                         }
                     } else {
-                        printf("N˙mero inv·lido. Escolha um n˙mero de 1 a 100.\n");
+                        printf("N√∫mero inv√°lido. Escolha um n√∫mero de 1 a 100.\n");
                         printf("                                                    \n");
                     } 
 					#ifdef _WIN32
@@ -596,7 +624,7 @@ int main() {
                     printf("                                                    \n");
                     
                 case 6:
-                	printf("AtÈ breve, volte sempre!\n");
+                	printf("At√© breve, volte sempre!\n");
                 	printf("                                                 \n");
                     printf("Desconectando...\n");
                     #ifdef _WIN32
@@ -605,16 +633,16 @@ int main() {
         sleep(3); 
 #endif
                     printf("                                                    \n");
-                    printf("Usu·rio desconectado! \n");
+                    printf("Usu√°rio desconectado! \n");
                     break;
                 default:
-                    printf("OpÁ„o inv·lida. Digite uma opÁ„o v·lida.\n");
+                    printf("Op√ß√£o inv√°lida. Digite uma op√ß√£o v√°lida.\n");
                     printf("                                                    \n");
             }
         } while (opcao2 != 6);
     } else {
         printf("Ops... Login ou senha incorretos.\n");
-        printf("N„o foi possivel acessar o sistema, tente novamente!\n");
+        printf("N√£o foi possivel acessar o sistema, tente novamente!\n");
         printf("                                                    \n");
     }
 
@@ -622,11 +650,11 @@ int main() {
 }
 void generateBoleto(float valorTotal) {
     printf("\n-----------------------------------------------------\n");
-    printf("*                 BOLETO BANC¡RIO                  *\n");
+    printf("*                 BOLETO BANC√ÅRIO                  *\n");
     printf("-----------------------------------------------------\n");
-    printf("| Benefici·rio: UFERSA.NET                         |\n");
+    printf("| Benefici√°rio: UFERSA.NET                         |\n");
     printf("| Valor a ser pago: R$ %.2f                        |\n", valorTotal);
     printf("| Vencimento: 26/07/2024                           |\n");
-    printf("| CÛdigo de Barras: 1234 5678 9012 3456 7890       |\n");
+    printf("| C√≥digo de Barras: 1234 5678 9012 3456 7890       |\n");
     printf("-----------------------------------------------------\n");
 }
