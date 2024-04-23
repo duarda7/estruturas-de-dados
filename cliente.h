@@ -1,7 +1,25 @@
-typedef struct clientes Clientes;
+#ifndef cliente.h
+#define cliente.h
 
-Clientes* criaLista(int n);
+#include <stdio.h>
+#include <string.h>
+#include <locale.h>
+#include <stdlib.h>
+#include <time.h>
 
-void lerClientes(int n, Clientes *v);
+typedef struct Node {
+    char email[100];
+    struct Node* next;
+} Node;
 
-void imprimeClientes (int n, Clientes *v);
+void printRaffleBoard(int board[10][10]);
+Node* createNode(char* email);
+void cadastrar(Node** head, char* email);
+void listar(Node* head);
+void buscar(Node* head, char* email);
+void excluir(Node** head, char* email);
+void editarEmail(Node* head, char* emailAntigo, char* novoEmail);
+void ordenarLista(Node** head);
+void generateBoleto(float valorTotal);
+
+#endif 
